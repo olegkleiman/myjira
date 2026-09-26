@@ -1,0 +1,69 @@
+# Support Cases Configuration
+support_cases:
+  enabled: true
+  issue_type: "Support Case"
+
+# JQL Query overrides - allows complete customization of support case queries per squad
+  # Maps squad name to custom JQL queries for created and resolved cases
+  # This overrides the default behavior which uses the squad field
+  # Use this when support cases are tracked differently (e.g., different project/field structure)
+  jql_overrides:
+    "EMEA [EMEA/Nordics/Dach] GBX Pod":
+      created_query: "filter = 'Greenbox EMEA Enterprise - Roman' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'Greenbox EMEA Enterprise - Roman' AND ((status changed to 'DELIVERED (Fix Deployed)' after '{start_date}' before '{end_date}') OR (status changed to 'DELIVERED (No Fix)' after '{start_date}' before '{end_date}') OR (status changed to 'Delivered' after '{start_date}' before '{end_date}'))"
+    "EMEA [FR] DTH":
+      created_query: "cf[14829] = 'EMEA [FR] DTH' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
+      resolved_query: "cf[14829] = 'EMEA [FR] DTH' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
+    "EMEA [FR] PAYBOX":
+      created_query: "cf[14829] = 'EMEA [FR] PAYBOX' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
+      resolved_query: "cf[14829] = 'EMEA [FR] PAYBOX' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
+    "EMEA [FR] VISION":
+      created_query: "cf[14829] = 'EMEA [FR] VISION' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
+      resolved_query: "cf[14829] = 'EMEA [FR] VISION' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
+    "EMEA [FR] WYNID":
+      created_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
+      resolved_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
+    "EMEA [IL] GPP":
+      created_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [IL] Payment Android":
+      created_query: "filter = 'EMEA-IL-Payment Android-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-IL-Payment Android-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [IL] Payment Engage":
+      created_query: "filter = 'EMEA-IL-Payment Engage-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-IL-Payment Engage-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [IL] TGW":
+      created_query: "filter = 'EMEA-IL-TGW-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-IL-TGW-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    # "EMEA [IL] VCPOS":
+    #   created_query: "filter = 'EMEA-IL-VCPOS-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+    #   resolved_query: "filter = 'EMEA-IL-VCPOS-Support' AND resolved >= '{start_date}' AND resolved <= '{end_date}' AND status in (Done, Closed)"
+    "EMEA [IT] Payment":
+      created_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [PT] Payment":
+      created_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [SA] Payment and Server Apps":
+      created_query: "filter = 'EMEA-SA-Payment-Apps-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-SA-Payment-Apps-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [SP] Payment":
+      created_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-SP/IT/PT-Payment-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [UK/SA/FR] VIPA":
+      created_query: "filter = 'VIPA-Support-Cases-ENT-WEINTRET' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'VIPA-Support-Cases-ENT-WEINTRET' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
+    "EMEA [UK] Dimebox":
+      created_query: "filter = 'EMEA [UK] Dimebox Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA [UK] Dimebox Support' AND  ((status changed to 'DELIVERED (Fix Deployed)' after '{start_date}' before '{end_date}') OR (status changed to 'DELIVERED (No Fix)' after '{start_date}' before '{end_date}') OR (status changed to 'Delivered' after '{start_date}' before '{end_date}'))"
+    "EMEA [UK] GSC(Payment App)":
+      created_query: "filter = 'EMEA-UK-GSC-PaymentApp-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-UK-GSC-PaymentApp-Support' AND  ((status changed to 'DELIVERED (Fix Deployed)' after '{start_date}' before '{end_date}') OR (status changed to 'DELIVERED (No Fix)' after '{start_date}' before '{end_date}') OR (status changed to 'Delivered' after '{start_date}' before '{end_date}'))"
+    "EMEA [UK] OCIUS(GW)":
+      created_query: "filter = 'EMEA-UK-OCIUS-GW-Support-Filter' AND created >= '{start_date}' AND created <= '{end_date}'"
+      resolved_query: "filter = 'EMEA-UK-OCIUS-GW-Support-Filter' AND statusCategory=Done and (statusCategoryChangedDate>='{start_date}' AND statusCategoryChangedDate<='{end_date}')"
+    "EMEA [UK] OCIUS(Payment App)":
+      created_query: "filter = 'EMEA-UK-Ocius-PaymentApp-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      resolved_query: "filter = 'EMEA-UK-Ocius-PaymentApp-Support' AND  ((status changed to 'DELIVERED (Fix Deployed)' after '{start_date}' before '{end_date}') OR (status changed to 'DELIVERED (No Fix)' after '{start_date}' before '{end_date}') OR (status changed to 'Delivered' after '{start_date}' before '{end_date}'))"
+
+
