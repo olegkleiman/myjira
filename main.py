@@ -92,12 +92,29 @@ async def main():
         support_cases_metrics = {}
         # if self.support_cases_enabled:
         with timings.measure("Fetch support cases metrics"):
-            support_cases_metrics = myJira.support_metrics()            
-
-        html_content = generate_html_report(my_squad_name, squad_epics, squad_metrics)
+            support_cases_metrics = myJira.fetch_support_cases_metrics()            
 
         confluence_base_url = os.getenv("CONFLUENCE_BASE_URL")
         myConfluence = MyConfluence(my_api_token, my_email, confluence_base_url)
+
+        # Setup Confluence page hierarchy
+        # with timings.measure("Setup Confluence page hierarchy"):
+        #     _, parent_id = myConfluence.setup_page_hierarchy(myConfluence.config.confluence_page_hierarchy)
+
+        # page_title = myConfluence.generate_page_title(
+        #     myConfluence.confluence_page_hierarchy['page_title_template'],
+        #     date_range = _report_date_label()
+        # )           
+
+        with timings.measure("Generate main HTML report"):
+            html_content = generate_html_report(my_squad_name, 
+                                                            squad_epics, 
+                                                            squad_metrics) 
+
+        # Create main page
+        print("\n" + "=" * 80)
+        print("PUBLISHING TO CONFLUENCE")
+        print("=" * 80)            
         
         # page_hierarchy = myConfluence.page_hierarchy
         grandparent_title = 'Execution Reviews'
@@ -122,6 +139,9 @@ async def main():
     except Exception as e:
         logger.error(f"An error occurred: {e}")
 
+def _report_date_label(self) -> str:
+    """Label identifying the reporting period, used in page/subpage titles."""
+    return f"{self.start_date} to {self.end_date}"
 
 def generate_html_report(squad_name: str, 
                          squad_epics: Dict, 

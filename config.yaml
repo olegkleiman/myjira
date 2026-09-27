@@ -1,3 +1,32 @@
+
+# Configuration for Execution Review System
+ 
+# Jira Configuration
+
+  
+# Confluence Configuration
+confluence:
+  space_key: "EEE"
+  
+  # Page hierarchy
+  page_hierarchy:
+    grandparent_title: "Execution Reviews"
+    # parent_title: "Epics Status History"
+    # {date_range} is the report's start_date-to-end_date span, {generated_date} is
+    # the day the report is actually published (today, YYYY-MM-DD)
+    page_title_template: "Execution Review - {date_range} (generated {generated_date})"
+
+  # Table settings
+  table:
+    epic_name_width: "28%"
+    status_width: "8%"
+    rag_status_width: "8%"
+    stories_progress_width: "16%"
+    delivery_date_width: "10%"
+    due_date_width: "10%"
+    comments_width: "30%"
+    pulse_story_points_width: "30%"
+
 # Support Cases Configuration
 support_cases:
   enabled: true
@@ -24,7 +53,8 @@ support_cases:
       created_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
       resolved_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
     "EMEA [IL] GPP":
-      created_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      # created_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
+      created_query: "(filter = 'EMEA-IL-GPP-Support' AND statusCategory = \"To Do\" AND created >= '{start_date}' AND created <= '{end_date}')"
       resolved_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
     "EMEA [IL] Payment Android":
       created_query: "filter = 'EMEA-IL-Payment Android-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"

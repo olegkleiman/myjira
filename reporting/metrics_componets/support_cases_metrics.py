@@ -75,6 +75,10 @@ class SupportCasesMetricsFetcher(BaseMetricsFetcher):
         jql = jql.replace('{end_date}', self.end_date)
         return jql
 
+    def fetch_support_cases_metrics()-> Dict[str, List]:
+        pass
+
+
     def fetch_support_cases_metrics_by_squad(
         self,
         squad_name: str,
@@ -123,27 +127,31 @@ class SupportCasesMetricsFetcher(BaseMetricsFetcher):
         logger.info(f"[Support Cases] Resolved JQL: {resolved_jql}")
 
         # Fetch issues
-        created_issues = self.jira_client.jql(
+        results = self.jira_client.jql(
             created_jql,
             fields='key,summary,priority,created,updated,status,project,resolutiondate,customfield_14829'
         )
-        resolved_issues = self.jira_client.jql(
-            resolved_jql,
-            fields='key,summary,priority,created,updated,resolved,status,project,resolutiondate,customfield_14829'
-        )
-
+        created_issues = results['issues']
         # Log results
         self._log_query_results(
             f"Support Cases Ingress (Created) - {squad_name}",
             squad_name,
             created_jql,
-            created_issues
+            results
+        )        
+
+        results = self.jira_client.jql(
+            resolved_jql,
+            fields='key,summary,priority,created,updated,resolved,status,project,resolutiondate,customfield_14829'
         )
+        resolved_issues = results['issues'] 
+
+        # Log results
         self._log_query_results(
             f"Support Cases Egress (Resolved) - {squad_name}",
             squad_name,
             resolved_jql,
-            resolved_issues
+            results
         )
 
         # Parse support cases

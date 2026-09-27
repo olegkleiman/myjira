@@ -24,21 +24,27 @@ class BaseMetricsFetcher:
 
     def _log_query_results(self, metric_name: str, project_key: str, jql: str, issues: List, additional_info: str = "") -> None:
         # log JQL query and results in a nice formatted way
+
+        if isinstance(issues, dict):
+            issue_list = issues.get('issues', [])
+        else:
+            issue_list = issues or []
+
         logger.info(f"\n{'=' * 80}")
         logger.info(f"{metric_name.upper()} - {project_key}")
         logger.info(f"{'=' * 80}")
         logger.info(f"JQL Query:")
         logger.info(f"   {jql.strip()}")
-        logger.info(f"Results: {len(issues)} issues found")
+        logger.info(f"Results: {len(issue_list)} issues found")
         
         if additional_info:
             logger.info(f"Info: {additional_info}")
         
-        if issues and len(issues) > 0:
+        if issue_list:
             logger.info(f"Sample Issues (showing first 5):")
             logger.info(f"{'Key':<12} {'Type':<10} {'Status':<15} {'Created':<12} {'Updated':<12}")
             logger.info(f"{'-' * 70}")
-            
+            issue_list
             for issue in issues.get('issues', [])[:5]: # Show first 5 issues
                 fields = issue.get('fields', {})
                 key = issue.get('key', 'N/A')

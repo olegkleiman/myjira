@@ -96,8 +96,55 @@ class MyJira:
     def metrics(self, from_date=None):
         return self.squad_metrics_fetcher.fetch_all_metrics()
 
-    def support_metrics(self, from_date=None):
-        return self.support_cases_fetcher.fetch_support_cases_metrics_by_squad(self.squad_name)
+    def fetch_support_cases_metrics(self, from_date=None):
+
+        jql_overrides = self.config.support_cases_jql_overrides
+        custom_created_jql = jql_overrides[self.squad_name].get('created_query')
+        custom_resolved_jql = jql_overrides[self.squad_name].get('resolved_query')
+        environments = ["production"] #, "non_production"]
+
+        def fetch_task(squad_name, env, custom_created_jql, custom_resolved_jql):
+            try:
+                return self.support_cases_fetcher.fetch_support_cases_metrics_by_squad(
+                    squad_name,
+                    environment = env,
+                    custom_created_jql=custom_created_jql,
+                    custom_resolved_jql=custom_resolved_jql
+                )
+
+            except Exception as e:
+                logger.error(f"    WARNING: Failed to fetch support cases for '{squad_name}' ({env}): {e}")
+                return None
+
+
+        tasks = []
+
+        for env in environments:
+            tasks.append((self.squad_name, env, custom_created_jql, custom_resolved_jql))
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {
+                executor.submit(fetch_task, squad_name, env, created_jql, resolved_jql): (squad_name, env)
+                for squad_name, env, created_jql, resolved_jql in tasks
+            }
+            results = {key: future.result() for future, key in futures.items()}
+
+        support_metrics = {}
+        has_jql_override = self.squad_name in jql_overrides
+        squad_metrics_list = []
+        for env in environments:
+            metrics = results[(self.squad_name, env)]
+            if metrics is None:
+                continue
+
+            if metrics.ingress == 0 and metrics.egress == 0 and not has_jql_override:
+                # alt_name = squad_overrides.get(squad.name)
+                # ...
+                squad_metrics_list.append(metrics)
+
+            support_metrics[self.squad_name] = squad_metrics_list
+
+        return support_metrics
 
     def _parse_issue(self, issue_data: Dict[str, Any], field_mappings: Dict[str, str]) -> JiraIssue:
         # parse issue data from API response into JiraIssue model
@@ -246,4 +293,5 @@ class MyJira:
     def metrics_end_date(self) -> str:
         # resolved end date (YYYY-MM-DD) for all queries - either the
         # explicit report.end_date, or today
-        return self._resolved_end_date    
+        return self._resolved_end_date
+    
