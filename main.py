@@ -102,15 +102,6 @@ async def main():
         confluence_base_url = os.getenv("CONFLUENCE_BASE_URL")
         myConfluence = MyConfluence(my_api_token, my_email, confluence_base_url)
 
-        # Setup Confluence page hierarchy
-        # with timings.measure("Setup Confluence page hierarchy"):
-        #     _, parent_id = myConfluence.setup_page_hierarchy(myConfluence.config.confluence_page_hierarchy)
-
-        # page_title = myConfluence.generate_page_title(
-        #     myConfluence.confluence_page_hierarchy['page_title_template'],
-        #     date_range = _report_date_label()
-        # )
-
         page_hierarchy = myConfluence.page_hierarchy
         grandparent_title = page_hierarchy['grandparent_title'] #Execution Reviews'
         space_key = myConfluence.space_key
