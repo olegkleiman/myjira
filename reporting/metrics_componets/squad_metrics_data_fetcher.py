@@ -52,12 +52,21 @@ class SquadMetricsDataFetcher:
             start_date=start_date, 
             end_date=end_date)
 
-    def fetch_all_metrics(self) ->Dict[str, MetricsData]:
+    def fetch_all_metrics(self) -> Dict[str, MetricsData]:
         """
-        Fetch all metrics for the squad.
-        ...
+        Fetch all metrics for all squads.
+
+        Every metric fetch below writes to a distinct attribute on its
+        squad's MetricsData object, so all (squad, metric) pairs across all
+        squads are independent of each other and can share a single bounded
+        thread pool - this replaces what used to be a fully sequential
+        squad loop, each running ~10 sequential JQL round trips.
+
+        Returns:
+            Dict mapping squad_name -> {"__squad_aggregate__": MetricsData}
         """
 
+        all_metrics = {}
         metrics_data = MetricsData(f"{self.squad} (Aggregate)")
 
         logger.info(f"\n\n{'=' * 80}")
@@ -72,7 +81,7 @@ class SquadMetricsDataFetcher:
             for future, attr in futures.items():
                 setattr(metrics_data, attr, future.result())
 
-        all_metrics = {"__squad_aggregate__": metrics_data}
+        all_metrics[self.squad] = {"__squad_aggregate__": metrics_data}
 
         logger.info(f"\n  Squad Summary: {self.squad}")
         logger.info(f"     - Customer Found Defects: {metrics_data.customer_found_defects}")

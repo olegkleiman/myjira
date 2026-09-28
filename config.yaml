@@ -3,7 +3,6 @@
  
 # Jira Configuration
 
-  
 # Confluence Configuration
 confluence:
   space_key: "EEE"
@@ -16,6 +15,10 @@ confluence:
     # the day the report is actually published (today, YYYY-MM-DD)
     page_title_template: "Execution Review - {date_range} (generated {generated_date})"
 
+
+# Report Settings
+report:
+
   # Table settings
   table:
     epic_name_width: "28%"
@@ -27,12 +30,24 @@ confluence:
     comments_width: "30%"
     pulse_story_points_width: "30%"
 
+  # Progress bar settings
+  progress_bar:
+    length: 10
+    colors:
+      filled: "🟦"
+      default: "⬜"
+
+  thresholds:
+    metrics:
+      green: 90
+      amber: 70      
+
 # Support Cases Configuration
 support_cases:
   enabled: true
   issue_type: "Support Case"
-
-# JQL Query overrides - allows complete customization of support case queries per squad
+  
+  # JQL Query overrides - allows complete customization of support case queries per squad
   # Maps squad name to custom JQL queries for created and resolved cases
   # This overrides the default behavior which uses the squad field
   # Use this when support cases are tracked differently (e.g., different project/field structure)
@@ -53,8 +68,7 @@ support_cases:
       created_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND created >= '{start_date}' AND created <= '{end_date}'"
       resolved_query: "cf[14829] = 'EMEA [FR] WYNID' AND \"Found by:\" in ('Customer - Production', 'VFI - Support') AND status changed to Done AFTER '{start_date}' BEFORE '{end_date}'"
     "EMEA [IL] GPP":
-      # created_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
-      created_query: "(filter = 'EMEA-IL-GPP-Support' AND statusCategory = \"To Do\" AND created >= '{start_date}' AND created <= '{end_date}')"
+      created_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
       resolved_query: "filter = 'EMEA-IL-GPP-Support' AND status changed to 'Delivered' after '{start_date}' before '{end_date}'"
     "EMEA [IL] Payment Android":
       created_query: "filter = 'EMEA-IL-Payment Android-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
@@ -96,4 +110,9 @@ support_cases:
       created_query: "filter = 'EMEA-UK-Ocius-PaymentApp-Support' AND status changed to 'Waiting for Support' after '{start_date}' before '{end_date}'"
       resolved_query: "filter = 'EMEA-UK-Ocius-PaymentApp-Support' AND  ((status changed to 'DELIVERED (Fix Deployed)' after '{start_date}' before '{end_date}') OR (status changed to 'DELIVERED (No Fix)' after '{start_date}' before '{end_date}') OR (status changed to 'Delivered' after '{start_date}' before '{end_date}'))"
 
-
+trends:
+  # when true (default), every metric except Backlog Pulse Story Points shows
+  # a comparison against the prior period of equal length (value, arrow,
+  # percent change). Set to false to skip fetching/rendering the comparison
+  # window entirely. Can also be overridden per-run with --no-trends.
+  enabled: true

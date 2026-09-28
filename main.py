@@ -17,6 +17,11 @@ from my_confluence import MyConfluence
 from models import EpicData
 from reporting.html_components.html_generator import HTMLGenerator
 
+def make_clickable_link(url: str, text: str = None) -> str:
+    """Wrap a URL in an OSC 8 escape sequence so terminals render it as a clickable link."""
+    label = text if text is not None else url
+    return f"\033]8;;{url}\033\\{label}\033]8;;\033\\"
+
 def setup_logging():
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     handler = logging.StreamHandler(sys.stdout)
@@ -44,9 +49,9 @@ async def main():
         timings = Timings()
 
         myJira = MyJira(my_api_token, my_email, jira_base_url, my_squad_name, trends_enabled)
-        fromDate = datetime.datetime.now() - datetime.timedelta(days=timeframe_days)
+        from_date = datetime.datetime.now() - datetime.timedelta(days=timeframe_days)
         with timings.measure("Fetch epics by squad"):
-            all_epics = myJira.epics(from_date=fromDate)
+            all_epics = myJira.epics(from_date = from_date)
             logger.info(f"  Found {len(all_epics)} epics for squad: {my_squad_name}")
 
         with ThreadPoolExecutor(max_workers=6) as executor:
@@ -86,7 +91,7 @@ async def main():
         logger.info("FETCHING SQUAD METRICS")
         logger.info("=" * 80)
         with timings.measure("Fetch squad metrics"):
-            squad_metrics = myJira.metrics(from_date=fromDate)
+            squad_metrics = myJira.metrics(from_date=from_date)
 
         # Fetch support cases metrics if enabled
         support_cases_metrics = {}
@@ -104,35 +109,51 @@ async def main():
         # page_title = myConfluence.generate_page_title(
         #     myConfluence.confluence_page_hierarchy['page_title_template'],
         #     date_range = _report_date_label()
-        # )           
+        # )
 
-        with timings.measure("Generate main HTML report"):
-            html_content = generate_html_report(my_squad_name, 
-                                                            squad_epics, 
-                                                            squad_metrics) 
-
-        # Create main page
-        print("\n" + "=" * 80)
-        print("PUBLISHING TO CONFLUENCE")
-        print("=" * 80)            
-        
-        # page_hierarchy = myConfluence.page_hierarchy
-        grandparent_title = 'Execution Reviews'
-        grandparent_page = myConfluence.get_page_by_title(space='EEE', title=grandparent_title)
+        page_hierarchy = myConfluence.page_hierarchy
+        grandparent_title = page_hierarchy['grandparent_title'] #Execution Reviews'
+        space_key = myConfluence.space_key
+        grandparent_page = myConfluence.get_page_by_title(space=space_key, title=grandparent_title)
         if not grandparent_page:
             logger.error(f"Grandparent page '{grandparent_title}' not found.")
-            raise ValueError("Grandparent page not found.")     
+            raise ValueError("Grandparent page not found.")
         
         grandparent_page_id = grandparent_page['id']
-        logger.info(f"Grandparent page '{grandparent_title}' found with ID: {grandparent_page_id}")
+        logger.info(f"Grandparent page '{grandparent_title}' found with ID: {grandparent_page_id}")                          
 
-        new_page = myConfluence.create_page(space='EEE', 
-                                title='delete_me', 
-                                # body='<p>Content is storage format</p>', 
+        now = datetime.datetime.now()
+
+        with timings.measure("Generate main HTML report"):
+            html_content = myConfluence.generate_html_report(my_squad_name, 
+                                                            squad_epics, 
+                                                            squad_metrics,
+                                                            support_cases_metrics,
+                                                            start_date = now,
+                                                            end_date = now - datetime.timedelta(days=timeframe_days)) 
+
+        # Create main page
+        logger.info("\n" + "=" * 80)
+        logger.info("PUBLISHING TO CONFLUENCE")
+        logger.info("=" * 80)
+
+        with timings.measure("Create Confluence main page"):
+            new_page = myConfluence.create_page(space='EEE', 
+                                title='delete_me', # page_title 
                                 body=html_content,
                                 parent_id=grandparent_page_id, 
-                                representation='storage')
-        logger.info(f"New page created with ID: {new_page['id']} and title: {new_page['title']}")
+                                representation='storage'
+            )   
+            logger.info(f"New page created with ID: {new_page['id']} and title: {new_page['title']}")
+            page_url = f"{confluence_base_url}/pages/viewpage.action?pageId={new_page['id']}"
+        
+
+        logger.info("\n" + "=" * 80)
+        logger.info("EXECUTION REVIEW COMPLETE!")
+        logger.info("=" * 80)
+        logger.info(f"Report available at: {make_clickable_link(page_url)}")
+
+        timings.print_summary()
 
     except KeyError as e:
         logger.error(f"Key error occurred: {e}")
@@ -142,40 +163,6 @@ async def main():
 def _report_date_label(self) -> str:
     """Label identifying the reporting period, used in page/subpage titles."""
     return f"{self.start_date} to {self.end_date}"
-
-def generate_html_report(squad_name: str, 
-                         squad_epics: Dict, 
-                         squad_metrics: Dict):
-    """Generate complete HTML report with squad-based organization"""
-    logger.info("Generating HTML report...")
-
-    table_config = {    
-        'epic_name_width': os.environ.get('epic_name_width', '8%'),
-        'status_width': os.environ.get('status_width', '8%'),
-        'rag_status_width': os.environ.get('rag_status_width', '8%'),
-        'stories_progress_width': os.environ.get('stories_progress_width', '16%'),
-        'delivery_date_width': os.environ.get('delivery_date_width', '10%'),
-        'due_date_width': os.environ.get('due_date_width', '10%'),
-        'comments_width': os.environ.get('comments_width', '30%'),
-        'pulse_story_points_width': os.environ.get('pulse_story_points_width', '30%')
-    }
-
-    html_generator = HTMLGenerator(table_config,
-                                    jira_base_url="https://jira.verifone.com")
-
-    # Transform squad epics to project groups for HTML generator
-    # Structure: squad_name → project_key → List[html_rows]
-    squad_project_groups = {}
-
-    for project_epics in squad_epics:
-        squad_project_groups[squad_name] = {}
-
-        for project_key, epics in project_epics.items():
-            rows = []
-            pass
-
-    html_content = html_generator.generate_html_report(grouped_rows=squad_epics)
-    return html_content
 
 if __name__ == "__main__":
     setup_logging()

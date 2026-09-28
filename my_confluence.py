@@ -1,10 +1,13 @@
 
 from typing import Dict, Optional, Any
 
+import datetime
+import os
 import requests
 from atlassian import ConfluenceV2
 from config.config_loader import load_config
 from reporting.html_components.html_generator import HTMLGenerator
+from reporting.html_components.progress_bar import ProgressBarGenerator
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,9 +36,24 @@ class MyConfluence:
 
         self.config = load_config(config_file)
 
+        self.progress_bar_generator = ProgressBarGenerator(
+            self.config.progress_bar_config
+        )
+
     @property
     def page_hierarchy(self) -> Dict[str, str]:
-        return self.confluence.get_page_hierarchy()
+        return self.config.confluence['page_hierarchy']
+
+    @property
+    def space_key(self):
+        return self.config.confluence['space_key']
+
+    def generate_page_title(self, template: str, date_range: str) -> str:
+        # generate page title from template - {date_range} is the report's
+        # (start_date, end_date) span, {generated_date} is always today, the
+        # day the report is actually being published
+        generated_date = datetime.now().strftime('%Y-%m-%d')
+        return template.format(date_range=date_range, generated_date=generated_date)        
 
     def get_page_by_title(self, space, title) -> Optional[Dict]:
         response = self.confluence.get_page_by_title(space, title, expand='ancestors')
@@ -114,8 +132,22 @@ class MyConfluence:
     def generate_html_report(self, squad_name: str,
                              squad_epics: Dict, 
                              squad_metrics: Dict,
-                             support_cases_metrics: Dict = None, subpage_urls: Dict = None) -> str:
+                             support_cases_metrics: Dict, 
+                             start_date: datetime,
+                             end_date: datetime,
+                             with_trends : bool = False, #=trends_enabled,
+                             subpage_urls: Dict = None,) -> str:
         """Generate complete HTML report with squad-based organization"""
+
+        self.html_generator = HTMLGenerator(
+            self.config.table_config,
+            "https://jira.verifone.com",
+            metrics_thresholds=self.config.metrics_thresholds,
+            metrics_start_date=start_date,
+            metrics_end_date=end_date,
+            trends_enabled=with_trends
+        )        
+
         logger.info("\nGenerating HTML report...")
 
         # Transform squad epics to project groups for HTML generator
@@ -185,4 +217,7 @@ class MyConfluence:
             # Use flattened keys as "project" keys
             list(flattened_metrics.keys()),
             support_cases_metrics
-        )                           
+        ) 
+
+
+        return html_content                          
