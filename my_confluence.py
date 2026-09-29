@@ -1,7 +1,7 @@
 
 from typing import Dict, Optional, Any
 
-import datetime
+from datetime import datetime
 import os
 import requests
 from atlassian import ConfluenceV2

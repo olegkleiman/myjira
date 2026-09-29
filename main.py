@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import datetime
+from datetime import datetime, timedelta, date
 import os
 import asyncio
 import sys
@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from my_jira import MyJira
 from my_confluence import MyConfluence
 from models import EpicData
-from reporting.html_components.html_generator import HTMLGenerator
 
 def make_clickable_link(url: str, text: str = None) -> str:
     """Wrap a URL in an OSC 8 escape sequence so terminals render it as a clickable link."""
@@ -49,9 +48,10 @@ async def main():
         timings = Timings()
 
         myJira = MyJira(my_api_token, my_email, jira_base_url, my_squad_name, trends_enabled)
-        from_date = datetime.datetime.now() - datetime.timedelta(days=timeframe_days)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=timeframe_days)
         with timings.measure("Fetch epics by squad"):
-            all_epics = myJira.epics(from_date = from_date)
+            all_epics = myJira.epics(from_date = start_date)
             logger.info(f"  Found {len(all_epics)} epics for squad: {my_squad_name}")
 
         with ThreadPoolExecutor(max_workers=6) as executor:
@@ -91,7 +91,7 @@ async def main():
         logger.info("FETCHING SQUAD METRICS")
         logger.info("=" * 80)
         with timings.measure("Fetch squad metrics"):
-            squad_metrics = myJira.metrics(from_date=from_date)
+            squad_metrics = myJira.metrics(from_date=start_date)
 
         # Fetch support cases metrics if enabled
         support_cases_metrics = {}
@@ -113,24 +113,29 @@ async def main():
         grandparent_page_id = grandparent_page['id']
         logger.info(f"Grandparent page '{grandparent_title}' found with ID: {grandparent_page_id}")                          
 
-        now = datetime.datetime.now()
-
         with timings.measure("Generate main HTML report"):
             html_content = myConfluence.generate_html_report(my_squad_name, 
                                                             squad_epics, 
                                                             squad_metrics,
                                                             support_cases_metrics,
-                                                            start_date = now,
-                                                            end_date = now - datetime.timedelta(days=timeframe_days)) 
+                                                            start_date = start_date.strftime("%Y-%m-%d"),
+                                                            end_date = end_date.strftime("%Y-%m-%d")) 
 
         # Create main page
         logger.info("\n" + "=" * 80)
         logger.info("PUBLISHING TO CONFLUENCE")
         logger.info("=" * 80)
 
+        stub_marker = 'delete_me '
+        page_title = myConfluence.generate_page_title(
+            page_hierarchy['page_title_template'],
+            date_range = _report_date_label(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+        )
+
         with timings.measure("Create Confluence main page"):
-            new_page = myConfluence.create_page(space='EEE', 
-                                title='delete_me', # page_title 
+            new_page = myConfluence.create_page(
+                                space=myConfluence.space_key, 
+                                title=stub_marker + squad_name + page_title,
                                 body=html_content,
                                 parent_id=grandparent_page_id, 
                                 representation='storage'
@@ -151,9 +156,18 @@ async def main():
     except Exception as e:
         logger.error(f"An error occurred: {e}")
 
-def _report_date_label(self) -> str:
+def _report_date_label(start_date: datetime, end_date: datetime) -> str:
     """Label identifying the reporting period, used in page/subpage titles."""
-    return f"{self.start_date} to {self.end_date}"
+    start_dt = date.fromisoformat(start_date)
+    end_dt = date.fromisoformat(end_date)
+    
+    # 2. Changed .date to .day for the start day number
+    start = f"{start_dt.strftime('%b')} {start_dt.day}"
+    
+    # 3. Formatted the end string (using %Y for a 4-digit year)
+    end = f"{end_dt.strftime('%b')} {end_dt.day}, {end_dt.strftime('%Y')}"
+    
+    return f"{start} - {end}"
 
 if __name__ == "__main__":
     setup_logging()
